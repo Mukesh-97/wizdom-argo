@@ -4,8 +4,8 @@ metadata:
   name: webfrontend-config
   namespace: cust1
 data:
-  TAG: "cust1"
+  TAG: "cust3"
   ENVMODE: "production"
-  AUTH_URL: "http://authbackend.cust1.svc.cluster.local:80/"
-  APP_URL: "http://webfrontend.cust1.svc.cluster.local:80/"
-  API_URL: "http://restbackend.cust1.svc.cluster.local:80/"
+  AUTH_URL: "http://authbackend.cust3.svc.cluster.local:80/"
+  APP_URL: "http://webfrontend.cust3.svc.cluster.local:80/"
+  API_URL: "http://restbackend.cust3.svc.cluster.local:80/"
