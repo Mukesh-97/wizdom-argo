@@ -1,0 +1,122 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: restbackend
+  namespace: <CUSTOMER>
+  labels:
+    app: restbackend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: restbackend
+  minReadySeconds: 60
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 2
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: restbackend
+    spec:
+      containers:
+        - name: restbackend
+          image: 253490773985.dkr.ecr.ap-south-1.amazonaws.com/restbackend:<CUSTOMER>
+          ports:
+            - containerPort: 80
+          envFrom:
+            - configMapRef:
+                name: restbackendend-config 
+          resources:
+            requests:
+              cpu: "200m"
+              memory: "2024Mi"
+            limits:
+              cpu: "500m"
+              memory: "3024Mi"
+          # readinessProbe:
+          #   httpGet:
+          #     path: /api/lovs/check/
+          #     port: 80
+          #   initialDelaySeconds: 15
+          #   periodSeconds: 10
+          # livenessProbe:
+          #   httpGet:
+          #     path: /api/lovs/check/
+          #     port: 80
+          #   initialDelaySeconds: 30
+          #   periodSeconds: 15
+          volumeMounts:
+            - name: logs
+              mountPath: /var/www/html/RestBackEnd/logs
+            - name: media
+              mountPath: /var/www/html/RestBackEnd/media
+      volumes:
+        - name: logs
+          emptyDir: {}
+        - name: media
+          emptyDir: {}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: restbackend
+  namespace: <CUSTOMER>
+spec:
+  selector:
+    app: restbackend
+  ports:
+    - protocol: TCP
+      port: 80       # ALB talks to this port
+      targetPort: 80 # Container port
+  type: ClusterIP
+
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: restbackend-hpa
+  namespace: <CUSTOMER>
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: restbackend
+  minReplicas: 1
+  maxReplicas: 3
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 60
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 70
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+        - type: Pods
+          value: 3
+          periodSeconds: 60
+        - type: Percent
+          value: 50
+          periodSeconds: 60
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+        - type: Pods
+          value: 1
+          periodSeconds: 300
+        - type: Percent
+          value: 30
+          periodSeconds: 300
